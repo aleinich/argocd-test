@@ -3,7 +3,6 @@ kind: Namespace
 metadata:
   name: victoria-metrics
 ---
-# --- STORAGE (PVC) ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -34,11 +33,11 @@ metadata:
   namespace: victoria-metrics
 spec:
   replicas: 1
-  minReadySeconds: 60 # Aspetta che il nodo sia stabile prima di proseguire
+  minReadySeconds: 60
   strategy:
     type: Recreate 
-    matchLabels:
   selector:
+    matchLabels: # <--- Deve stare esattamente qui
       app: victoriametrics
       instance: node-1
   template:
@@ -50,8 +49,7 @@ spec:
       terminationGracePeriodSeconds: 60
       hostAliases:
       - ip: "140.82.121.4"
-        hostnames:
-        - "github.com"
+        hostnames: ["github.com"]
       containers:
       - name: vm
         image: victoriametrics/victoria-metrics:v1.124.0
@@ -93,11 +91,10 @@ spec:
       terminationGracePeriodSeconds: 60
       hostAliases:
       - ip: "140.82.121.4"
-        hostnames:
-        - "github.com"
+        hostnames: ["github.com"]
       containers:
       - name: vm
-        image: victoriametrics/victoria-metrics:v1.123.0
+        image: victoriametrics/victoria-metrics:v1.124.0
         args:
           - "-storageDataPath=/storage"
           - "-retentionPeriod=1"
@@ -112,7 +109,7 @@ spec:
           persistentVolumeClaim:
             claimName: vm-data-2
 ---
-# SERVIZI E CONFIGMAP (Invariati ma aggiornati nel namespace)
+# --- SERVICES ---
 apiVersion: v1
 kind: Service
 metadata:
@@ -153,7 +150,7 @@ spec:
   selector:
     app: victoriametrics
 ---
-# --- VMAGENT CONFIG & DEPLOY ---
+# --- VMAGENT ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -187,11 +184,10 @@ spec:
     spec:
       hostAliases:
       - ip: "140.82.121.4"
-        hostnames:
-        - "github.com"
+        hostnames: ["github.com"]
       containers:
       - name: vmagent
-        image: victoriametrics/vmagent:v1.123.0
+        image: victoriametrics/vmagent:v1.124.0
         args:
           - "-promscrape.config=/etc/prometheus/prometheus.yml"
           - "-remoteWrite.url=http://vm-svc-1:8429/api/v1/write"
