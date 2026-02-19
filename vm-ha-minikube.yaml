@@ -37,8 +37,8 @@ spec:
   minReadySeconds: 60 # Aspetta che il nodo sia stabile prima di proseguire
   strategy:
     type: Recreate 
-  selector:
     matchLabels:
+  selector:
       app: victoriametrics
       instance: node-1
   template:
@@ -54,7 +54,7 @@ spec:
         - "github.com"
       containers:
       - name: vm
-        image: victoriametrics/victoria-metrics:v1.230.0
+        image: victoriametrics/victoria-metrics:v1.123.0
         args:
           - "-storageDataPath=/storage"
           - "-retentionPeriod=1"
