@@ -47,7 +47,7 @@ spec:
     spec:
       containers:
       - name: vm
-        image: victoriametrics/victoria-metrics:v1.136.0
+        image: victoriametrics/victoria-metrics:v1.135.0
         args:
           - "-storageDataPath=/storage"
           - "-retentionPeriod=1"
@@ -99,8 +99,8 @@ spec:
         instance: node-2
     spec:
       containers:
+        image: victoriametrics/victoria-metrics:v1.135.0
       - name: vm
-        image: victoriametrics/victoria-metrics:v1.136.0
         args:
           - "-storageDataPath=/storage"
           - "-retentionPeriod=1"
