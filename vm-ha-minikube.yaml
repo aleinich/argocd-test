@@ -54,7 +54,7 @@ spec:
         - "github.com"
       containers:
       - name: vm
-        image: victoriametrics/victoria-metrics:v1.110.0
+        image: victoriametrics/victoria-metrics:v1.230.0
         args:
           - "-storageDataPath=/storage"
           - "-retentionPeriod=1"
