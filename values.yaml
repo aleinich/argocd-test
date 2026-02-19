@@ -1,0 +1,9 @@
+imageTag: "1.127.0"
+
+nodes:
+  - name: vm-node-1
+    pvcName: vm-data-1
+    wave: "1"
+  - name: vm-node-2
+    pvcName: vm-data-2
+    wave: "2"
