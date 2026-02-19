@@ -3,6 +3,7 @@ kind: Namespace
 metadata:
   name: victoria-metrics
 ---
+# --- STORAGE (PVC) ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -25,7 +26,7 @@ spec:
     requests:
       storage: 5Gi
 ---
-# --- STORAGE NODE 1 ---
+# --- VICTORIA METRICS NODE 1 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -33,52 +34,18 @@ metadata:
   namespace: victoria-metrics
 spec:
   replicas: 1
+  minReadySeconds: 60 # Aspetta che il nodo sia stabile prima di proseguire
   strategy:
-    type: Recreate # Forza lo spegnimento prima del riavvio per liberare il volume
+    type: Recreate 
   selector:
     matchLabels:
-      app: vm-node-1
+      app: victoriametrics
+      instance: node-1
   template:
     metadata:
       labels:
-        app: vm-node-1
-    spec:
-      terminationGracePeriodSeconds: 60 # Tempo per il flush dei dati e rimozione lock
-      hostAliases:
-      - ip: "140.82.121.4"
-        hostnames:
-        - "github.com"
-      containers:
-      - name: victoria-metrics
-        image: victoriametrics/vmstorage:v1.123.0
-        ports:
-        - containerPort: 8482
-        - containerPort: 8400
-        volumeMounts:
-        - name: storage
-          mountPath: /storage
-      volumes:
-      - name: storage
-        persistentVolumeClaim:
-          claimName: vm-data-1
----
-# --- STORAGE NODE 2 ---
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: vm-node-2
-  namespace: victoria-metrics
-spec:
-  replicas: 1
-  strategy:
-    type: Recreate
-  selector:
-    matchLabels:
-      app: vm-node-2
-  template:
-    metadata:
-      labels:
-        app: vm-node-2
+        app: victoriametrics
+        instance: node-1
     spec:
       terminationGracePeriodSeconds: 60
       hostAliases:
@@ -86,20 +53,121 @@ spec:
         hostnames:
         - "github.com"
       containers:
-      - name: victoria-metrics
-        image: victoriametrics/vmstorage:v1.123.0
+      - name: vm
+        image: victoriametrics/victoria-metrics:v1.110.0
+        args:
+          - "-storageDataPath=/storage"
+          - "-retentionPeriod=1"
+          - "-httpListenAddr=0.0.0.0:8429"
         ports:
-        - containerPort: 8482
-        - containerPort: 8400
+          - containerPort: 8429
         volumeMounts:
-        - name: storage
-          mountPath: /storage
+          - name: data
+            mountPath: /storage
       volumes:
-      - name: storage
-        persistentVolumeClaim:
-          claimName: vm-data-2
+        - name: data
+          persistentVolumeClaim:
+            claimName: vm-data-1
 ---
-# --- VMAGENT (Collector) ---
+# --- VICTORIA METRICS NODE 2 ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vm-node-2
+  namespace: victoria-metrics
+spec:
+  replicas: 1
+  minReadySeconds: 60
+  strategy:
+    type: Recreate 
+  selector:
+    matchLabels:
+      app: victoriametrics
+      instance: node-2
+  template:
+    metadata:
+      labels:
+        app: victoriametrics
+        instance: node-2
+    spec:
+      terminationGracePeriodSeconds: 60
+      hostAliases:
+      - ip: "140.82.121.4"
+        hostnames:
+        - "github.com"
+      containers:
+      - name: vm
+        image: victoriametrics/victoria-metrics:v1.110.0
+        args:
+          - "-storageDataPath=/storage"
+          - "-retentionPeriod=1"
+          - "-httpListenAddr=:8429"
+        ports:
+          - containerPort: 8429
+        volumeMounts:
+          - name: data
+            mountPath: /storage
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: vm-data-2
+---
+# SERVIZI E CONFIGMAP (Invariati ma aggiornati nel namespace)
+apiVersion: v1
+kind: Service
+metadata:
+  name: vm-svc-1
+  namespace: victoria-metrics
+spec:
+  ports:
+    - port: 8429
+      targetPort: 8429
+  selector:
+    app: victoriametrics
+    instance: node-1
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vm-svc-2
+  namespace: victoria-metrics
+spec:
+  ports:
+    - port: 8429
+      targetPort: 8429
+  selector:
+    app: victoriametrics
+    instance: node-2
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vm-read-lb
+  namespace: victoria-metrics
+spec:
+  type: NodePort
+  ports:
+    - port: 8429
+      targetPort: 8429
+      nodePort: 30429
+  selector:
+    app: victoriametrics
+---
+# --- VMAGENT CONFIG & DEPLOY ---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vmagent-config
+  namespace: victoria-metrics
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 10s
+    scrape_configs:
+      - job_name: 'vmagent'
+        static_configs:
+          - targets: ['localhost:8429']
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -107,6 +175,8 @@ metadata:
   namespace: victoria-metrics
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: vmagent
@@ -123,27 +193,14 @@ spec:
       - name: vmagent
         image: victoriametrics/vmagent:v1.110.0
         args:
-          - "-remoteWrite.url=http://victoria-metrics-service:8480/insert/0/prometheus"
-        ports:
-        - containerPort: 8429
----
-# --- SERVICE PER ACCESSO UI E INSERIMENTO ---
-apiVersion: v1
-kind: Service
-metadata:
-  name: victoria-metrics-service
-  namespace: victoria-metrics
-spec:
-  type: NodePort
-  ports:
-  - name: http-select
-    port: 8481
-    targetPort: 8481
-    nodePort: 30428 # Porta per la tua UI
-  - name: http-insert
-    port: 8480
-    targetPort: 8480
-  selector:
-    # Nota: questo service dovrebbe puntare a un vmselect in un cluster vero, 
-    # qui lo configuriamo per bilanciare sui nodi o verso il componente di query
-    app: vm-node-1
+          - "-promscrape.config=/etc/prometheus/prometheus.yml"
+          - "-remoteWrite.url=http://vm-svc-1:8429/api/v1/write"
+          - "-remoteWrite.url=http://vm-svc-2:8429/api/v1/write"
+          - "-remoteWrite.tmpDataPath=/tmp/vmagent-buffer"
+        volumeMounts:
+          - name: config
+            mountPath: /etc/prometheus
+      volumes:
+        - name: config
+          configMap:
+            name: vmagent-config
