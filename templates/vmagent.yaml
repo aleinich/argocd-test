@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vmagent
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "3" # Parte per ultimo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vmagent
+  template:
+    metadata:
+      labels:
+        app: vmagent
+    spec:
+      hostAliases:
+      - ip: "140.82.121.4"
+        hostnames: ["github.com"]
+      containers:
+      - name: vmagent
+        image: "victoriametrics/vmagent:{{ .Values.imageTag }}"
+        args:
+          - "-remoteWrite.url=http://vm-svc-1:8429/api/v1/write"
+          - "-remoteWrite.url=http://vm-svc-2:8429/api/v1/write"
