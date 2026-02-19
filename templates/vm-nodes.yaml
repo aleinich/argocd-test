@@ -1,0 +1,40 @@
+{{- range $node := .Values.nodes }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $node.name }}
+  annotations:
+    argocd.argoproj.io/sync-wave: {{ $node.wave | quote }}
+spec:
+  replicas: 1
+  minReadySeconds: 60
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: victoriametrics
+      instance: {{ $node.name }}
+  template:
+    metadata:
+      labels:
+        app: victoriametrics
+        instance: {{ $node.name }}
+    spec:
+      terminationGracePeriodSeconds: 60
+      containers:
+      - name: vm
+        image: "victoriametrics/victoria-metrics:{{ $.Values.imageTag }}"
+        args:
+          - "-storageDataPath=/storage"
+          - "-retentionPeriod=1"
+        ports:
+          - containerPort: 8429
+        volumeMounts:
+          - name: data
+            mountPath: /storage
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ $node.pvcName }}
+---
+{{- end }}
