@@ -50,7 +50,7 @@ spec:
         - "github.com"
       containers:
       - name: victoria-metrics
-        image: victoriametrics/vmstorage:v1.110.0-cluster
+        image: victoriametrics/vmstorage:v1.123.0
         ports:
         - containerPort: 8482
         - containerPort: 8400
@@ -87,7 +87,7 @@ spec:
         - "github.com"
       containers:
       - name: victoria-metrics
-        image: victoriametrics/vmstorage:v1.110.0-cluster
+        image: victoriametrics/vmstorage:v1.123.0
         ports:
         - containerPort: 8482
         - containerPort: 8400
