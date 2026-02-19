@@ -1,9 +1,16 @@
-imageTag: "1.127.0"
+sharedConfig: &shared
+  server:
+    persistentVolume:
+      enabled: true
+      size: 5Gi
+    retentionPeriod: 1
 
-nodes:
-  - name: vm-node-1
-    pvcName: vm-data-1
-    wave: "1"
-  - name: vm-node-2
-    pvcName: vm-data-2
-    wave: "2"
+node1:
+  <<: *shared
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+
+node2:
+  <<: *shared
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
