@@ -31,6 +31,10 @@ kind: Deployment
 metadata:
   name: vm-node-1
   namespace: victoria-metrics
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"  
+spec:
+  minReadySeconds: 60
 spec:
   replicas: 1
   minReadySeconds: 60
@@ -73,6 +77,10 @@ kind: Deployment
 metadata:
   name: vm-node-2
   namespace: victoria-metrics
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"  # Parte solo quando node-1 è Healthy
+spec:
+  minReadySeconds: 60
 spec:
   replicas: 1
   minReadySeconds: 60
