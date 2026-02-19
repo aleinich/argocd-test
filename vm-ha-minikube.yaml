@@ -85,6 +85,9 @@ spec:
   replicas: 1
   strategy:
     type: Recreate 
+  template:
+    spec:
+      terminationGracePeriodSeconds: 60
   selector:
     matchLabels:
       app: victoriametrics
