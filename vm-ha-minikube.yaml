@@ -97,7 +97,7 @@ spec:
         - "github.com"
       containers:
       - name: vm
-        image: victoriametrics/victoria-metrics:v1.110.0
+        image: victoriametrics/victoria-metrics:v1.123.0
         args:
           - "-storageDataPath=/storage"
           - "-retentionPeriod=1"
@@ -191,7 +191,7 @@ spec:
         - "github.com"
       containers:
       - name: vmagent
-        image: victoriametrics/vmagent:v1.110.0
+        image: victoriametrics/vmagent:v1.123.0
         args:
           - "-promscrape.config=/etc/prometheus/prometheus.yml"
           - "-remoteWrite.url=http://vm-svc-1:8429/api/v1/write"
