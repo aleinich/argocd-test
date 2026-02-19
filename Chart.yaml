@@ -1,8 +1,12 @@
 apiVersion: v2
-name: victoria-metrics-local
-description: Helm chart per VM Single Node Mirroring
+name: victoria-metrics-umbrella
+description: Umbrella Chart per mirroring VictoriaMetrics con Sync Waves
 version: 0.1.0
 dependencies:
-  - name: victoria-metrics-single
-    version: "0.28.0" # Specifica la versione del chart ufficiale
+  - &vm-deps
+    name: victoria-metrics-single
+    version: "0.28.0"
     repository: "https://victoriametrics.github.io/helm-charts/"
+    alias: node1
+  - <<: *vm-deps
+    alias: node2
