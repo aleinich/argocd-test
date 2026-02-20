@@ -1,6 +1,5 @@
 apiVersion: v2
 name: victoria-metrics-umbrella
-description: Umbrella chart per gestire due istanze separate di VictoriaMetrics
 version: 0.1.0
 dependencies:
   - name: victoria-metrics-single
@@ -11,3 +10,7 @@ dependencies:
     version: "0.28.0"
     repository: "https://victoriametrics.github.io/helm-charts/"
     alias: node2
+  - name: victoria-metrics-auth
+    version: "0.7.0" # Versione stabile del chart vmauth
+    repository: "https://victoriametrics.github.io/helm-charts/"
+    alias: gateway
