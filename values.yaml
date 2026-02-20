@@ -23,8 +23,7 @@ vmauth:
   # Annotazione per il Deployment del gateway
   annotations: 
     argocd.argoproj.io/sync-wave: "3"
-  deployment:
-    strategy:
+  updateStrategy:
       type: RollingUpdate
       rollingUpdate:
         maxSurge: 1       # Crea 1 nuovo pod prima di distruggere i vecchi
