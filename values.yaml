@@ -1,16 +1,37 @@
-sharedConfig: &shared
-  server:
-    persistentVolume:
-      enabled: true
-      size: 5Gi
-    retentionPeriod: 1
-
+# Configurazione per il primo nodo (Wave 1)
 node1:
-  <<: *shared
-  annotations:
-    argocd.argoproj.io/sync-wave: "1"
+  fullnameOverride: "vm-node1"
+  server:
+    annotations:
+      argocd.argoproj.io/sync-wave: "1"
+    persistentVolume:
+      size: 8Gi
+  vmagent:
+    enabled: true
+    annotations:
+      argocd.argoproj.io/sync-wave: "1"
+  # Aggiunta vmauth per il nodo 1
+  vmauth:
+    enabled: true
+    replicaCount: 2
+    annotations:
+      argocd.argoproj.io/sync-wave: "1"
 
+# Configurazione per il secondo nodo (Wave 2)
 node2:
-  <<: *shared
-  annotations:
-    argocd.argoproj.io/sync-wave: "2"
+  fullnameOverride: "vm-node2"
+  server:
+    annotations:
+      argocd.argoproj.io/sync-wave: "2"
+    persistentVolume:
+      size: 8Gi
+  vmagent:
+    enabled: true
+    annotations:
+      argocd.argoproj.io/sync-wave: "2"
+  # Aggiunta vmauth per il nodo 2
+  vmauth:
+    enabled: true
+    replicaCount: 2
+    annotations:
+      argocd.argoproj.io/sync-wave: "3"
