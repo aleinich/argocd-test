@@ -1,22 +1,25 @@
-# Nodo 1: Server + Unico Agent
 node1:
   fullnameOverride: "vm-node1"
+  # Valore globale per l'alias node1
+  image:
+    tag: "v1.101.0"
   server:
     annotations: { argocd.argoproj.io/sync-wave: "1" }
     persistentVolume: { size: 8Gi }
   vmagent:
     enabled: true
     annotations: { argocd.argoproj.io/sync-wave: "1" }
-    # Fix esplicito per l'errore InvalidImageName
+    # Valore specifico per vmagent
     image:
       tag: "v1.101.0"
     remoteWrite:
-      - url: "http://vm-node1-victoria-metrics-single-server:8428/api/v1/write"
-      - url: "http://vm-node2-victoria-metrics-single-server:8428/api/v1/write"
+      - url: "http://vm-node1-server:8428/api/v1/write"
+      - url: "http://vm-node2-server:8428/api/v1/write"
 
-# Nodo 2: Server + Gateway Auth
 node2:
   fullnameOverride: "vm-node2"
+  image:
+    tag: "v1.101.0"
   server:
     annotations: { argocd.argoproj.io/sync-wave: "2" }
     persistentVolume: { size: 8Gi }
@@ -26,14 +29,13 @@ node2:
     enabled: true
     replicaCount: 2
     annotations: { argocd.argoproj.io/sync-wave: "2" }
-    # Fix immagine anche per vmauth se necessario
     image:
       tag: "v1.101.0"
     config:
       users:
         - username: "node1-user"
           password: "password1"
-          url_prefix: "http://vm-node1-victoria-metrics-single-server:8428"
+          url_prefix: "http://vm-node1-server:8428"
         - username: "node2-user"
           password: "password2"
-          url_prefix: "http://vm-node2-victoria-metrics-single-server:8428"
+          url_prefix: "http://vm-node2-server:8428"
