@@ -1,37 +1,29 @@
-# Configurazione per il primo nodo (Wave 1)
+# Archiviazione Nodo 1
 node1:
   fullnameOverride: "vm-node1"
   server:
-    annotations:
-      argocd.argoproj.io/sync-wave: "1"
-    persistentVolume:
-      size: 8Gi
-  vmagent:
-    enabled: true
-    annotations:
-      argocd.argoproj.io/sync-wave: "1"
-  # Aggiunta vmauth per il nodo 1
-  vmauth:
-    enabled: true
-    replicaCount: 2
-    annotations:
-      argocd.argoproj.io/sync-wave: "1"
+    annotations: { argocd.argoproj.io/sync-wave: "1" }
+    persistentVolume: { size: 8Gi }
+  vmagent: { enabled: true }
 
-# Configurazione per il secondo nodo (Wave 2)
+# Archiviazione Nodo 2
 node2:
   fullnameOverride: "vm-node2"
   server:
-    annotations:
-      argocd.argoproj.io/sync-wave: "2"
-    persistentVolume:
-      size: 8Gi
-  vmagent:
-    enabled: true
-    annotations:
-      argocd.argoproj.io/sync-wave: "2"
-  # Aggiunta vmauth per il nodo 2
-  vmauth:
-    enabled: true
-    replicaCount: 2
-    annotations:
-      argocd.argoproj.io/sync-wave: "3"
+    annotations: { argocd.argoproj.io/sync-wave: "2" }
+    persistentVolume: { size: 8Gi }
+  vmagent: { enabled: true }
+
+# Gateway Indipendente (vmauth)
+gateway:
+  fullnameOverride: "vm-gateway"
+  replicaCount: 2
+  annotations: { argocd.argoproj.io/sync-wave: "3" }
+  config:
+    users:
+      - username: "node1-user"
+        password: "password1"
+        url_prefix: "http://vm-node1-victoria-metrics-single-server:8428"
+      - username: "node2-user"
+        password: "password2"
+        url_prefix: "http://vm-node2-victoria-metrics-single-server:8428"
