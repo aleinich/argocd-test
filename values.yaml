@@ -1,24 +1,27 @@
-# Archiviazione Nodo 1
+# Nodo 1
 node1:
   fullnameOverride: "vm-node1"
   server:
     annotations: { argocd.argoproj.io/sync-wave: "1" }
     persistentVolume: { size: 8Gi }
-  vmagent: { enabled: true }
 
-# Archiviazione Nodo 2
+# Nodo 2
 node2:
   fullnameOverride: "vm-node2"
   server:
     annotations: { argocd.argoproj.io/sync-wave: "2" }
     persistentVolume: { size: 8Gi }
-  vmagent: { enabled: true }
 
-# Gateway Indipendente (vmauth)
+# Gateway Indipendente
 gateway:
   fullnameOverride: "vm-gateway"
   replicaCount: 2
   annotations: { argocd.argoproj.io/sync-wave: "3" }
+  # Questo risolve il crash del template fornendo l'oggetto richiesto
+  image:
+    repository: victoriametrics/vmauth
+    tag: "v1.101.0"
+    pullPolicy: IfNotPresent
   config:
     users:
       - username: "node1-user"
