@@ -1,28 +1,22 @@
+# Nodo 1: Solo Storage Server
 node1:
   fullnameOverride: "vm-node1"
-  # Valore globale per l'alias node1
-  image:
-    tag: "v1.101.0"
   server:
     annotations: { argocd.argoproj.io/sync-wave: "1" }
     persistentVolume: { size: 8Gi }
-  vmagent:
-    enabled: true
-    annotations: { argocd.argoproj.io/sync-wave: "1" }
-    # Valore specifico per vmagent
     image:
       tag: "v1.101.0"
-    remoteWrite:
-      - url: "http://vm-node1-server:8428/api/v1/write"
-      - url: "http://vm-node2-server:8428/api/v1/write"
+  vmagent:
+    enabled: false
 
+# Nodo 2: Storage Server + Gateway Auth
 node2:
   fullnameOverride: "vm-node2"
-  image:
-    tag: "v1.101.0"
   server:
     annotations: { argocd.argoproj.io/sync-wave: "2" }
     persistentVolume: { size: 8Gi }
+    image:
+      tag: "v1.101.0"
   vmagent:
     enabled: false
   vmauth:
