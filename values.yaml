@@ -1,17 +1,27 @@
+# Nodo 1: Server + L'unico Agent del cluster
 node1:
   fullnameOverride: "vm-node1"
   server:
     annotations: { argocd.argoproj.io/sync-wave: "1" }
     persistentVolume: { size: 8Gi }
-  vmagent: { enabled: true }
+  vmagent:
+    enabled: true
+    annotations: { argocd.argoproj.io/sync-wave: "1" }
+    # Configurazione per scrivere su entrambi i server (opzionale)
+    remoteWrite:
+      - url: "http://vm-node1-victoria-metrics-single-server:8428/api/v1/write"
+      - url: "http://vm-node2-victoria-metrics-single-server:8428/api/v1/write"
 
+# Nodo 2: Solo Server + Gateway Auth (Replicas 2)
 node2:
   fullnameOverride: "vm-node2"
   server:
     annotations: { argocd.argoproj.io/sync-wave: "2" }
     persistentVolume: { size: 8Gi }
-  vmagent: { enabled: true }
-  # Abilitiamo vmauth qui con 2 repliche
+  # Spegniamo l'agent qui
+  vmagent:
+    enabled: false
+  # Abilitiamo vmauth come Gateway per tutti
   vmauth:
     enabled: true
     replicaCount: 2
