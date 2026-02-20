@@ -1,17 +1,17 @@
-common_storage: &storage_size "50Gi"
+common_storage: &storage_size "5Gi"
 
 node1:
   fullnameOverride: "vm-node1"
   server:
     annotations: { argocd.argoproj.io/sync-wave: "1" }
-    persistentVolume: { size: *storage_size, enabled: true }
+    persistentVolume: { enabled: true, size: *storage_size }
   vmagent: { enabled: false }
 
 node2:
   fullnameOverride: "vm-node2"
   server:
     annotations: { argocd.argoproj.io/sync-wave: "2" }
-    persistentVolume: { size: *storage_size, enabled: true }
+    persistentVolume: { enabled: true, size: *storage_size }
   vmagent: { enabled: false }
 
 vmauth:
