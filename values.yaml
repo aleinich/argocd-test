@@ -1,34 +1,30 @@
-# Definizione della variabile comune
-common_storage: &storage_size "5Gi"
+common_storage: &storage_size "50Gi"
 
 node1:
   fullnameOverride: "vm-node1"
   server:
     annotations: { argocd.argoproj.io/sync-wave: "1" }
-    persistentVolume:
-      enabled: true
-      size: *storage_size  # Richiama il valore definito sopra
-  vmagent:
-    enabled: false
+    persistentVolume: { size: *storage_size, enabled: true }
+  vmagent: { enabled: false }
 
 node2:
   fullnameOverride: "vm-node2"
   server:
     annotations: { argocd.argoproj.io/sync-wave: "2" }
-    persistentVolume:
-      enabled: true
-      size: *storage_size  # Richiama lo stesso valore
-  vmagent:
-    enabled: false
-  vmauth:
-    enabled: true
-    replicaCount: 2
-    annotations: { argocd.argoproj.io/sync-wave: "2" }
-    config:
-      users:
-        - username: "node1-user"
-          password: "password1"
-          url_prefix: "http://vm-node1-server:8428"
-        - username: "node2-user"
-          password: "password2"
-          url_prefix: "http://vm-node2-server:8428"
+    persistentVolume: { size: *storage_size, enabled: true }
+  vmagent: { enabled: false }
+
+vmauth:
+  enabled: true
+  fullnameOverride: "vm-gateway"
+  replicaCount: 2
+  annotations: { argocd.argoproj.io/sync-wave: "3" }
+  image: { tag: "v1.101.0" }
+  config:
+    users:
+      - username: "node1-user"
+        password: "password1"
+        url_prefix: "http://vm-node1-server:8428"
+      - username: "node2-user"
+        password: "password2"
+        url_prefix: "http://vm-node2-server:8428"
