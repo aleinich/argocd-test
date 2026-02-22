@@ -53,7 +53,7 @@ vlogs-node2:
 # Gateway per Logs
 vmauth:
   enabled: true
-  fullnameOverride: "vm-gateway"
+  fullnameOverride: "vl-gateway"
   
   # Come da file: replicaCount è alla radice del chart
   replicaCount: 2
