@@ -1,24 +1,36 @@
+# Variabili comuni
+common_storage: &storage_size "5Gi"
+
+# Parametri condivisi per VictoriaLogs
 common_server_params: &server_params
-  persistentVolume:
-    enabled: true
-    size: "5Gi"
   server:
+    # Imposta la retention a 3 mesi
+    retentionPeriod: "3m"
+    persistentVolume:
+      enabled: true
+      size: *storage_size
     securityContext:
       runAsUser: 1000
       runAsGroup: 1000
       fsGroup: 1000
       runAsNonRoot: true
+    # Forza l'esecuzione sul nodo master di Minikube
     nodeSelector:
       kubernetes.io/hostname: minikube
 
+# Configurazione Nodo 1
 vlogs-node1:
   fullnameOverride: "vlogs-node1"
-  <<: *server_params
+  server:
+    <<: *server_params
 
+# Configurazione Nodo 2
 vlogs-node2:
   fullnameOverride: "vlogs-node2"
-  <<: *server_params
+  server:
+    <<: *server_params
 
+# Configurazione Gateway (vmauth)
 vmauth:
   enabled: true
   fullnameOverride: "vl-gateway"
@@ -42,7 +54,7 @@ vmauth:
   config:
     unauthorized_user:
       url_prefix: 
-        - "http://vlogs-node1:9428"
-        - "http://vlogs-node2:9428"
+        - "http://vlogs-node1-server.victoria-logs.svc:9428"
+        - "http://vlogs-node2-server.victoria-logs.svc:9428"
   annotations: 
     argocd.argoproj.io/sync-wave: "3"
