@@ -47,30 +47,31 @@ node2:
 vmauth:
   enabled: true
   fullnameOverride: "vm-gateway"
-  # Sposta replicaCount e strategy dentro il blocco server
-  server:
-    replicaCount: 2
-    updateStrategy:
-      type: RollingUpdate
-      rollingUpdate:
-        maxUnavailable: 1
-        maxSurge: 1
-    
-    # Anche le probes per il gateway vanno qui
-    livenessProbe:
-      initialDelaySeconds: 5
-      periodSeconds: 15
-      tcpSocket:
-        port: http
-    readinessProbe:
-      initialDelaySeconds: 5
-      periodSeconds: 15
-      tcpSocket:
-        port: http
+  # In alcune versioni del chart vmauth, i parametri sono alla radice, non sotto 'server'
+  replicaCount: 2
+  
+  # Riprova con 'strategy' invece di 'updateStrategy' se il precedente è fallito,
+  # ma assicurati che sia indentato correttamente sotto 'vmauth'
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+
+  # Forziamo le probes qui
+  livenessProbe:
+    initialDelaySeconds: 15
+    tcpSocket:
+      port: 8427
+  readinessProbe:
+    initialDelaySeconds: 15
+    tcpSocket:
+      port: 8427
 
   annotations: 
     argocd.argoproj.io/sync-wave: "3"
   
+  # Verifica che questa sezione non sia dentro 'server'
   affinity:
     podAntiAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
