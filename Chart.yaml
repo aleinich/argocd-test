@@ -11,6 +11,6 @@ dependencies:
     repository: "https://victoriametrics.github.io/helm-charts/"
     alias: node2
   - name: victoria-metrics-auth
-    version: "0.21.0"
+    version: "0.25.0"
     repository: "https://victoriametrics.github.io/helm-charts/"
     alias: vmauth
