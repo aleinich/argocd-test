@@ -5,7 +5,7 @@ provider "argocd" {
 }
 
 module "victoria_metrics_umbrella" {
-  source          = "./modules/argocd_app"
+  source          = "./modules/argocd-app"
   app_name        = "victoria-metrics-ha"
   repo_url        = "https://github.com/aleinich/argocd-test.git"
   target_revision = "HEAD"
