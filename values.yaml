@@ -43,40 +43,33 @@ node2:
               values: ["vm-node1", "vm-node2"]
           topologyKey: "kubernetes.io/hostname"
   vmagent: { enabled: false }
-
+  
 vmauth:
   enabled: true
   fullnameOverride: "vm-gateway"
   
-  # Nella 0.25.0 tutto ciò che riguarda il Deployment vive qui
+  # Nella 0.25.0, la struttura segue 'server' -> 'deployment' -> 'spec'
   server:
     replicaCount: 2
-    # La chiave corretta nel template è strategy
-    strategy:
-      type: RollingUpdate
-      rollingUpdate:
-        maxUnavailable: 1
-        maxSurge: 1
+    deployment:
+      spec:
+        strategy:
+          type: RollingUpdate
+          rollingUpdate:
+            maxUnavailable: 1
+            maxSurge: 1
     
-    # Probes (essenziali per il rolling update)
+    # Probes (anch'esse sotto server)
     livenessProbe:
-      initialDelaySeconds: 15
-      periodSeconds: 15
+      initialDelaySeconds: 5
       tcpSocket:
         port: http
     readinessProbe:
-      initialDelaySeconds: 15
-      periodSeconds: 15
+      initialDelaySeconds: 5
       tcpSocket:
         port: http
 
-  # Il blocco config e affinity rimangono fuori da 'server'
-  config:
-    unauthorized_user:
-      url_prefix: 
-        - "http://vm-node1-server:8428"
-        - "http://vm-node2-server:8428"
-
+  # Cambiato in 'preferred' per permettere 2 pod su un singolo nodo (Minikube)
   affinity:
     podAntiAffinity:
       preferredDuringSchedulingIgnoredDuringExecution:
@@ -89,6 +82,8 @@ vmauth:
               values: ["vmauth"]
           topologyKey: "kubernetes.io/hostname"
 
-  # Annotazioni di ArgoCD a livello di risorsa principale
-  annotations: 
-    argocd.argoproj.io/sync-wave: "3"
+  config:
+    unauthorized_user:
+      url_prefix: 
+        - "http://vm-node1-server:8428"
+        - "http://vm-node2-server:8428"
