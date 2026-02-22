@@ -58,3 +58,5 @@ vmauth:
         - "http://vlogs-node2-server.victoria-logs.svc:9428"
   annotations: 
     argocd.argoproj.io/sync-wave: "3"
+  podAnnotations:
+    test-rollout: "1" 
