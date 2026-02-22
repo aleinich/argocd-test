@@ -1,0 +1,62 @@
+common_storage: &storage_size "10Gi" # I log pesano più delle metriche
+
+common_probes: &probe_config
+  livenessProbe:
+    initialDelaySeconds: 30
+    periodSeconds: 15
+  readinessProbe:
+    initialDelaySeconds: 30
+    periodSeconds: 15
+
+# VictoriaLogs Node 1
+vlogs-node1:
+  fullnameOverride: "vlogs-node1"
+  server:
+    annotations: 
+      argocd.argoproj.io/sync-wave: "1"
+    podAnnotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "9428"
+    persistentVolume: { enabled: true, size: *storage_size }
+    <<: *probe_config
+    affinity:
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+            - key: app.kubernetes.io/instance
+              operator: In
+              values: ["vlogs-node1", "vlogs-node2"]
+          topologyKey: "kubernetes.io/hostname"
+
+# VictoriaLogs Node 2
+vlogs-node2:
+  fullnameOverride: "vlogs-node2"
+  server:
+    annotations: 
+      argocd.argoproj.io/sync-wave: "2"
+    podAnnotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "9428"
+    persistentVolume: { enabled: true, size: *storage_size }
+    <<: *probe_config
+    affinity:
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+            - key: app.kubernetes.io/instance
+              operator: In
+              values: ["vlogs-node1", "vlogs-node2"]
+          topologyKey: "kubernetes.io/hostname"
+
+# Gateway per Logs
+vmauth:
+  enabled: true
+  fullnameOverride: "vlogs-gateway"
+  replicaCount: 2
+  config:
+    unauthorized_user:
+      url_prefix: 
+        - "http://vlogs-node1:9428"
+        - "http://vlogs-node2:9428"
