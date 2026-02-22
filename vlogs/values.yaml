@@ -2,23 +2,22 @@ common_server_params: &server_params
   persistentVolume:
     enabled: true
     size: "5Gi"
-  securityContext:
-    runAsUser: 1000
-    runAsGroup: 1000
-    fsGroup: 1000
-    runAsNonRoot: true  # Specifichiamo che non vogliamo root
-  nodeSelector:
-    kubernetes.io/hostname: minikube
+  server:
+    securityContext:
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 1000
+      runAsNonRoot: true
+    nodeSelector:
+      kubernetes.io/hostname: minikube
 
 vlogs-node1:
   fullnameOverride: "vlogs-node1"
-  server:
-    <<: *server_params
+  <<: *server_params
 
 vlogs-node2:
   fullnameOverride: "vlogs-node2"
-  server:
-    <<: *server_params
+  <<: *server_params
 
 vmauth:
   enabled: true
