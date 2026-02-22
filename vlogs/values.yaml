@@ -4,7 +4,7 @@ common_storage: &storage_size "5Gi"
 # --- PARAMETRI BASE (Senza Wave condivisa) ---
 common_server_params: &server_params
   podAnnotations:
-    test-rollout: "3"
+    test-rollout: "4"
   server:
     retentionPeriod: "3m"
     persistentVolume:
