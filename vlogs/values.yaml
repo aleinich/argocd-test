@@ -1,10 +1,9 @@
-# Variabili comuni
+# values.yaml
 common_storage: &storage_size "5Gi"
 
-# --- PARAMETRI BASE (Senza Wave condivisa) ---
 common_server_params: &server_params
   podAnnotations:
-    test-rollout: "4"
+    test-rollout: "10"
   server:
     retentionPeriod: "3"
     extraArgs:
@@ -20,29 +19,30 @@ common_server_params: &server_params
     nodeSelector:
       kubernetes.io/hostname: minikube
 
-# --- WAVE 1: VICTORIA LOGS NODO 1 ---
+# WAVE 1
 vlogs-node1:
   fullnameOverride: "vlogs-node1"
   annotations:
     argocd.argoproj.io/sync-wave: "1"
-  <<: *server_params
+  server:
+    <<: *server_params
 
-# --- WAVE 2: VICTORIA LOGS NODO 2 ---
+# WAVE 2
 vlogs-node2:
   fullnameOverride: "vlogs-node2"
   annotations:
     argocd.argoproj.io/sync-wave: "2"
-  <<: *server_params
+  server:
+    <<: *server_params
 
-# --- WAVE 3: GATEWAY (VMAUTH) ---
+# WAVE 3
 vmauth:
   enabled: true
   fullnameOverride: "vl-gateway"
   annotations: 
     argocd.argoproj.io/sync-wave: "3"
   podAnnotations:
-    test-rollout: "3"
-  replicaCount: 2
+    test-rollout: "10"
   config:
     unauthorized_user:
       url_prefix: 
