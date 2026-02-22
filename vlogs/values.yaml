@@ -5,9 +5,9 @@ common_storage: &storage_size "5Gi"
 common_server_params: &server_params
   annotations:
     argocd.argoproj.io/sync-wave: "1"
+  podAnnotations:
+    test-rollout: "2"  # Incrementa questo numero per forzare il restart
   server:
-    podAnnotations:
-      test-rollout: "1" # Cambia questo numero ogni volta che vuoi testare
     retentionPeriod: "3m"
     persistentVolume:
       enabled: true
