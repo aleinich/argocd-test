@@ -13,4 +13,4 @@ dependencies:
   - name: victoria-metrics-auth
     version: "0.25.0"
     repository: "https://victoriametrics.github.io/helm-charts/"
-    alias: vlogs-auth
+    alias: vmauth
