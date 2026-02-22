@@ -1,6 +1,5 @@
 common_storage: &storage_size "5Gi"
 
-# Configurazione comune per le Probes (evita il CrashLoop)
 common_probes: &probe_config
   livenessProbe:
     initialDelaySeconds: 30
@@ -49,6 +48,16 @@ vmauth:
   enabled: true
   fullnameOverride: "vm-gateway"
   replicaCount: 2
+  # Forza il rolling update: garantisce disponibilità durante l'aggiornamento
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  
+  # Le Probes sono essenziali per il rolling update
+  <<: *probe_config
+
   annotations: 
     argocd.argoproj.io/sync-wave: "3"
   
