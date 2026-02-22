@@ -47,40 +47,40 @@ node2:
 vmauth:
   enabled: true
   fullnameOverride: "vm-gateway"
-  # In alcune versioni del chart vmauth, i parametri sono alla radice, non sotto 'server'
   replicaCount: 2
   
-  # Riprova con 'strategy' invece di 'updateStrategy' se il precedente è fallito,
-  # ma assicurati che sia indentato correttamente sotto 'vmauth'
+  # Per vmauth chart 0.23.0 la chiave corretta è questa:
   strategy:
     type: RollingUpdate
     rollingUpdate:
       maxUnavailable: 1
       maxSurge: 1
 
-  # Forziamo le probes qui
+  # Assicurati che le probes usino il nome della porta o il numero corretto
   livenessProbe:
-    initialDelaySeconds: 15
+    initialDelaySeconds: 10
     tcpSocket:
       port: 8427
   readinessProbe:
-    initialDelaySeconds: 15
+    initialDelaySeconds: 10
     tcpSocket:
       port: 8427
 
   annotations: 
     argocd.argoproj.io/sync-wave: "3"
   
-  # Verifica che questa sezione non sia dentro 'server'
+  # Se sei su Minikube con un solo nodo, usa preferred o i pod non scaleranno mai correttamente
   affinity:
     podAntiAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-      - labelSelector:
-          matchExpressions:
-          - key: app.kubernetes.io/name
-            operator: In
-            values: ["vmauth"]
-        topologyKey: "kubernetes.io/hostname"
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+            - key: app.kubernetes.io/name
+              operator: In
+              values: ["vmauth"]
+          topologyKey: "kubernetes.io/hostname"
 
   config:
     unauthorized_user:
