@@ -1,11 +1,11 @@
-# --- VICTORIA LOGS NODO 1 (WAVE 1) ---
+# --- VICTORIA LOGS NODO 1 (SYNC WAVE 1) ---
 vlogs-node1:
   fullnameOverride: "vlogs-node1"
   annotations:
     argocd.argoproj.io/sync-wave: "1"
   server:
     podAnnotations:
-      test-rollout: "13"
+      test-rollout: "100"
     retentionPeriod: "3"
     extraArgs:
       "http.shutdownDelay": "20s"
@@ -20,14 +20,14 @@ vlogs-node1:
     nodeSelector:
       kubernetes.io/hostname: minikube
 
-# --- VICTORIA LOGS NODO 2 (WAVE 2) ---
+# --- VICTORIA LOGS NODO 2 (SYNC WAVE 2) ---
 vlogs-node2:
   fullnameOverride: "vlogs-node2"
   annotations:
     argocd.argoproj.io/sync-wave: "2"
   server:
     podAnnotations:
-      test-rollout: "13"
+      test-rollout: "100"
     retentionPeriod: "3"
     extraArgs:
       "http.shutdownDelay": "20s"
@@ -42,14 +42,14 @@ vlogs-node2:
     nodeSelector:
       kubernetes.io/hostname: minikube
 
-# --- GATEWAY VMAUTH (WAVE 3) ---
+# --- GATEWAY VMAUTH (SYNC WAVE 3) ---
 vmauth:
   enabled: true
   fullnameOverride: "vl-gateway"
   annotations: 
     argocd.argoproj.io/sync-wave: "3"
   podAnnotations:
-    test-rollout: "13"
+    test-rollout: "100"
   replicaCount: 2
   config:
     unauthorized_user:
