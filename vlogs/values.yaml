@@ -90,6 +90,3 @@ vmauth:
   # Argocd Wave
   annotations: 
     argocd.argoproj.io/sync-wave: "3"
-
-  podAnnotations:
-    test-rollout: "1" # Cambia questo numero ogni volta che vuoi testare
