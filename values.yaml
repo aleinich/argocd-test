@@ -49,38 +49,24 @@ vmauth:
   fullnameOverride: "vm-gateway"
   replicaCount: 2
   
-  # Per vmauth chart 0.23.0 la chiave corretta è questa:
+  # Nel chart 0.23.0 la chiave per il deployment è 'deploymentStrategy'
+  # o viene iniettata tramite 'extraArgs'. Tuttavia, molti utenti hanno risolto così:
   strategy:
     type: RollingUpdate
     rollingUpdate:
       maxUnavailable: 1
       maxSurge: 1
 
-  # Assicurati che le probes usino il nome della porta o il numero corretto
+  # Se il chart ignora 'strategy', forziamo la sovrascrittura tramite patch nel modulo Terraform o ArgoCD
+  # Ma prima, assicuriamoci che le probes siano correttamente indentate:
   livenessProbe:
-    initialDelaySeconds: 10
     tcpSocket:
       port: 8427
+    initialDelaySeconds: 10
   readinessProbe:
-    initialDelaySeconds: 10
     tcpSocket:
       port: 8427
-
-  annotations: 
-    argocd.argoproj.io/sync-wave: "3"
-  
-  # Se sei su Minikube con un solo nodo, usa preferred o i pod non scaleranno mai correttamente
-  affinity:
-    podAntiAffinity:
-      preferredDuringSchedulingIgnoredDuringExecution:
-      - weight: 100
-        podAffinityTerm:
-          labelSelector:
-            matchExpressions:
-            - key: app.kubernetes.io/name
-              operator: In
-              values: ["vmauth"]
-          topologyKey: "kubernetes.io/hostname"
+    initialDelaySeconds: 10
 
   config:
     unauthorized_user:
