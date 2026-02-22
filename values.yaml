@@ -1,4 +1,9 @@
 apiVersion: v1
+kind: Namespace
+metadata:
+  name: victoria-metrics
+---
+apiVersion: v1
 kind: Service
 metadata:
   name: vm-server
@@ -42,6 +47,13 @@ spec:
         image: victoriametrics/victoria-metrics:latest
         ports:
         - containerPort: 8428
+        # Argomenti per la ritenzione e storage (opzionale)
+        args:
+          - "-storageDataPath=/storage"
+          - "-retentionPeriod=1"
+        volumeMounts:
+        - name: server-data
+          mountPath: /storage
   volumeClaimTemplates:
   - metadata:
       name: server-data
@@ -50,6 +62,18 @@ spec:
       resources:
         requests:
           storage: 5Gi
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vmauth-config
+  namespace: victoria-metrics
+data:
+  auth.yml: |
+    # Configurazione senza autenticazione: 
+    # ogni richiesta anonima viene inoltrata al backend
+    unauthorized_user:
+      url_prefix: "http://vm-server:8428"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -92,13 +116,15 @@ spec:
           name: vmauth-config
 ---
 apiVersion: v1
-kind: ConfigMap
+kind: Service
 metadata:
-  name: vmauth-config
+  name: vmauth-service
   namespace: victoria-metrics
-data:
-  auth.yml: |
-    users:
-      - username: "admin"
-        password: "password"
-        url_prefix: "http://vm-server:8428"
+spec:
+  type: NodePort
+  selector:
+    app: vmauth
+  ports:
+  - port: 8427
+    targetPort: 8427
+    nodePort: 30427
