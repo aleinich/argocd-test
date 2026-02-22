@@ -49,25 +49,27 @@ vmauth:
   fullnameOverride: "vm-gateway"
   
   server:
+    # Ora che non abbiamo vincoli, 2 repliche gireranno senza problemi
     replicaCount: 2
-    # Specifica la strategia nel blocco corretto per la 0.25.x
+    
+    # Questa struttura forza finalmente il RollingUpdate
     strategy:
       type: RollingUpdate
       rollingUpdate:
         maxUnavailable: 1
         maxSurge: 1
     
-    # Probes per gestire correttamente il passaggio durante il rolling update
+    # Fondamentali per far capire a K8s quando il pod è pronto
     livenessProbe:
-      initialDelaySeconds: 10
+      initialDelaySeconds: 15
       tcpSocket:
         port: http
     readinessProbe:
-      initialDelaySeconds: 10
+      initialDelaySeconds: 15
       tcpSocket:
         port: http
 
-  # Abbiamo rimosso l'intero blocco affinity: ...
+  # Abbiamo rimosso completamente il blocco affinity
 
   config:
     unauthorized_user:
