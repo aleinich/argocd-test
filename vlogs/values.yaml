@@ -1,22 +1,18 @@
-# Variabili comuni per pulizia
+# Variabili comuni
 common_storage: &storage_size "5Gi"
 
-# Configurazione dell'InitContainer per correggere i permessi della cartella /storage
-# Gira una sola volta all'avvio come root, permettendo poi al processo VictoriaLogs 
-# di girare con l'utente non privilegiato (UID 1000).
-common_init_container: &init_container
-  initContainers:
-  - name: fix-permissions
-    image: busybox
-    command: ["sh", "-c", "chown -R 1000:1000 /storage"]
-    volumeMounts:
-    - name: storage
-      mountPath: /storage
+# Definiamo il blocco root security context
+common_root_access: &root_access
+  server:
+    securityContext:
+      runAsUser: 0
+      runAsGroup: 0
+      fsGroup: 0
 
 vlogs-node1:
   fullnameOverride: "vlogs-node1"
+  <<: *root_access
   server:
-    <<: *init_container
     persistentVolume:
       enabled: true
       size: *storage_size
@@ -32,8 +28,8 @@ vlogs-node1:
 
 vlogs-node2:
   fullnameOverride: "vlogs-node2"
+  <<: *root_access
   server:
-    <<: *init_container
     persistentVolume:
       enabled: true
       size: *storage_size
@@ -47,15 +43,10 @@ vlogs-node2:
               values: ["vlogs-node1", "vlogs-node2"]
           topologyKey: "kubernetes.io/hostname"
 
-# Gateway per Logs
 vmauth:
   enabled: true
   fullnameOverride: "vl-gateway"
-  
-  # Come da file: replicaCount è alla radice del chart
   replicaCount: 2
-
-  # La strategia di update è sotto deployment.spec
   deployment:
     spec:
       strategy:
@@ -63,8 +54,6 @@ vmauth:
         rollingUpdate:
           maxUnavailable: 1
           maxSurge: 1
-
-  # Anche le probes sono alla radice, ma si chiamano 'probe' (singolare)
   probe:
     readiness:
       tcpSocket:
@@ -74,16 +63,11 @@ vmauth:
       tcpSocket:
         port: http
       initialDelaySeconds: 10
-
-  # Rimuoviamo affinity per evitare blocchi sui due nodi
   affinity: {}
-
   config:
     unauthorized_user:
       url_prefix: 
         - "http://vlogs-node1:9428"
         - "http://vlogs-node2:9428"
-        
-  # Argocd Wave
   annotations: 
     argocd.argoproj.io/sync-wave: "3"
