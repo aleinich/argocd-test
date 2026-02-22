@@ -1,4 +1,4 @@
-common_storage: &storage_size "50Gi"
+common_storage: &storage_size "5Gi"
 
 node1:
   fullnameOverride: "vm-node1"
