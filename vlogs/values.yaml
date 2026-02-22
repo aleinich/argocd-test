@@ -1,21 +1,30 @@
 # Variabili comuni
 common_storage: &storage_size "5Gi"
 
-# Definiamo il blocco root security context
-common_root_access: &root_access
-  server:
-    securityContext:
-      runAsUser: 0
-      runAsGroup: 0
-      fsGroup: 0
-
-vlogs-node1:
-  fullnameOverride: "vlogs-node1"
-  <<: *root_access
+# Definizione dell'InitContainer per il fix dei permessi.
+# Deve girare come root per poter eseguire chown sulla cartella dell'host.
+common_settings: &node_settings
   server:
     persistentVolume:
       enabled: true
       size: *storage_size
+    # Questo garantisce che il processo principale giri come utente 1000
+    securityContext:
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 1000
+  initContainers:
+  - name: fix-permissions
+    image: busybox
+    command: ["sh", "-c", "chown -R 1000:1000 /storage"]
+    volumeMounts:
+    - name: storage
+      mountPath: /storage
+
+vlogs-node1:
+  fullnameOverride: "vlogs-node1"
+  <<: *node_settings
+  server:
     affinity:
       podAntiAffinity:
         requiredDuringSchedulingIgnoredDuringExecution:
@@ -28,11 +37,8 @@ vlogs-node1:
 
 vlogs-node2:
   fullnameOverride: "vlogs-node2"
-  <<: *root_access
+  <<: *node_settings
   server:
-    persistentVolume:
-      enabled: true
-      size: *storage_size
     affinity:
       podAntiAffinity:
         requiredDuringSchedulingIgnoredDuringExecution:
@@ -63,7 +69,6 @@ vmauth:
       tcpSocket:
         port: http
       initialDelaySeconds: 10
-  affinity: {}
   config:
     unauthorized_user:
       url_prefix: 
