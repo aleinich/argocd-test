@@ -1,0 +1,97 @@
+global:
+  imagePullSecrets: []
+  image:
+    registry: ""
+  compatibility:
+    openshift:
+      adaptSecurityContext: "auto"
+
+cluster:
+  dnsDomain: cluster.local.
+
+rbac:
+  create: true
+  namespaced: false
+  extraLabels: {}
+  annotations: {}
+
+nameOverride: ""
+printNotes: true
+
+serviceAccount:
+  create: true
+  name:
+  extraLabels: {}
+  annotations: {}
+  automountToken: true
+
+podDisruptionBudget:
+  enabled: false
+  labels: {}
+
+server:
+  enabled: true
+  name:
+  image:
+    registry: ""
+    repository: victoriametrics/victoria-metrics
+    tag: ""
+    variant: ""
+    pullPolicy: IfNotPresent
+    imagePullSecrets: []
+  replicaCount: 1
+  retentionPeriod: 1
+  extraArgs:
+    envflag.enable: true
+    envflag.prefix: VM_
+    loggerFormat: json
+    httpListenAddr: :8428
+  extraHostPathMounts: []
+  extraVolumes: []
+  extraVolumeMounts: []
+  extraContainers: []
+  initContainers: []
+  tolerations: []
+  nodeSelector: {}
+  affinity: {}
+  env: []
+  envFrom: []
+  persistentVolume:
+    enabled: true
+    accessModes:
+      - ReadWriteOnce
+    mountPath: /storage
+    size: 16Gi
+  resources: {}
+  probe:
+    readiness:
+      initialDelaySeconds: 5
+      periodSeconds: 15
+    liveness:
+      initialDelaySeconds: 30
+      periodSeconds: 30
+  securityContext:
+    enabled: true
+  podSecurityContext:
+    enabled: true
+
+ingress:
+  enabled: false
+  hosts:
+    - name: vmsingle.local
+      path: - /
+      port: http
+  tls: []
+
+service:
+  type: ClusterIP
+  servicePort: 8428
+  targetPort: http
+  annotations: {}
+  labels: {}
+
+serviceMonitor:
+  enabled: false
+
+scrape:
+  enabled: false
