@@ -48,27 +48,35 @@ vmauth:
   enabled: true
   fullnameOverride: "vm-gateway"
   
-  # Deve stare qui, alla radice di vmauth
-  replicaCount: 2
-  
-  # La chiave deve essere 'strategy', non 'updateStrategy'
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxUnavailable: 1
-      maxSurge: 1
+  # Nella 0.25.0 tutto ciò che riguarda il Deployment vive qui
+  server:
+    replicaCount: 2
+    # La chiave corretta nel template è strategy
+    strategy:
+      type: RollingUpdate
+      rollingUpdate:
+        maxUnavailable: 1
+        maxSurge: 1
+    
+    # Probes (essenziali per il rolling update)
+    livenessProbe:
+      initialDelaySeconds: 15
+      periodSeconds: 15
+      tcpSocket:
+        port: http
+    readinessProbe:
+      initialDelaySeconds: 15
+      periodSeconds: 15
+      tcpSocket:
+        port: http
 
-  # Anche le probes devono stare qui fuori
-  livenessProbe:
-    tcpSocket:
-      port: 8427
-    initialDelaySeconds: 15
-  readinessProbe:
-    tcpSocket:
-      port: 8427
-    initialDelaySeconds: 15
+  # Il blocco config e affinity rimangono fuori da 'server'
+  config:
+    unauthorized_user:
+      url_prefix: 
+        - "http://vm-node1-server:8428"
+        - "http://vm-node2-server:8428"
 
-  # Mantieni il resto come prima
   affinity:
     podAntiAffinity:
       preferredDuringSchedulingIgnoredDuringExecution:
@@ -81,8 +89,6 @@ vmauth:
               values: ["vmauth"]
           topologyKey: "kubernetes.io/hostname"
 
-  config:
-    unauthorized_user:
-      url_prefix: 
-        - "http://vm-node1-server:8428"
-        - "http://vm-node2-server:8428"
+  # Annotazioni di ArgoCD a livello di risorsa principale
+  annotations: 
+    argocd.argoproj.io/sync-wave: "3"
