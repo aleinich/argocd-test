@@ -1,30 +1,20 @@
 # Variabili comuni
 common_storage: &storage_size "5Gi"
 
-# Definizione dell'InitContainer per il fix dei permessi.
-# Deve girare come root per poter eseguire chown sulla cartella dell'host.
-common_settings: &node_settings
-  server:
-    persistentVolume:
-      enabled: true
-      size: *storage_size
-    # Questo garantisce che il processo principale giri come utente 1000
-    securityContext:
-      runAsUser: 0
-      runAsGroup: 0
-      fsGroup: 0
-  initContainers:
-  - name: fix-permissions
-    image: busybox
-    command: ["sh", "-c", "chown -R 1000:1000 /storage"]
-    volumeMounts:
-    - name: storage
-      mountPath: /storage
+# Definiamo i parametri interni al blocco server per evitare sovrascritture
+common_server_params: &server_params
+  persistentVolume:
+    enabled: true
+    size: *storage_size
+  securityContext:
+    runAsUser: 0
+    runAsGroup: 0
+    fsGroup: 0
 
 vlogs-node1:
   fullnameOverride: "vlogs-node1"
-  <<: *node_settings
   server:
+    <<: *server_params
     affinity:
       podAntiAffinity:
         requiredDuringSchedulingIgnoredDuringExecution:
@@ -37,8 +27,8 @@ vlogs-node1:
 
 vlogs-node2:
   fullnameOverride: "vlogs-node2"
-  <<: *node_settings
   server:
+    <<: *server_params
     affinity:
       podAntiAffinity:
         requiredDuringSchedulingIgnoredDuringExecution:
