@@ -1,13 +1,18 @@
-# values.yaml
+# Variabili comuni
 common_storage: &storage_size "5Gi"
 
-common_server_params: &server_params
-  podAnnotations:
-    test-rollout: "10"
+# --- NODO 1 (WAVE 1) ---
+vlogs-node1:
+  fullnameOverride: "vlogs-node1"
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
   server:
+    podAnnotations:
+      test-rollout: "11"
     retentionPeriod: "3"
+    # La sintassi corretta per i flag extra nel chart
     extraArgs:
-      http.ShutdownDelay: "20s"
+      "http.shutdownDelay": "20s"
     persistentVolume:
       enabled: true
       size: *storage_size
@@ -19,30 +24,36 @@ common_server_params: &server_params
     nodeSelector:
       kubernetes.io/hostname: minikube
 
-# WAVE 1
-vlogs-node1:
-  fullnameOverride: "vlogs-node1"
-  annotations:
-    argocd.argoproj.io/sync-wave: "1"
-  server:
-    <<: *server_params
-
-# WAVE 2
+# --- NODO 2 (WAVE 2) ---
 vlogs-node2:
   fullnameOverride: "vlogs-node2"
   annotations:
     argocd.argoproj.io/sync-wave: "2"
   server:
-    <<: *server_params
+    podAnnotations:
+      test-rollout: "11"
+    retentionPeriod: "3"
+    extraArgs:
+      "http.shutdownDelay": "20s"
+    persistentVolume:
+      enabled: true
+      size: *storage_size
+    securityContext:
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 1000
+      runAsNonRoot: true
+    nodeSelector:
+      kubernetes.io/hostname: minikube
 
-# WAVE 3
+# --- GATEWAY (WAVE 3) ---
 vmauth:
   enabled: true
   fullnameOverride: "vl-gateway"
   annotations: 
     argocd.argoproj.io/sync-wave: "3"
   podAnnotations:
-    test-rollout: "10"
+    test-rollout: "11"
   config:
     unauthorized_user:
       url_prefix: 
