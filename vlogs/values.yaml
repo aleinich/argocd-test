@@ -1,24 +1,25 @@
-common_storage: &storage_size "5Gi" # I log pesano più delle metriche
+# Variabili comuni per pulizia
+common_storage: &storage_size "5Gi"
 
-common_probes: &probe_config
-  livenessProbe:
-    initialDelaySeconds: 30
-    periodSeconds: 15
-  readinessProbe:
-    initialDelaySeconds: 30
-    periodSeconds: 15
+# Configurazione dell'InitContainer per correggere i permessi della cartella /storage
+# Gira una sola volta all'avvio come root, permettendo poi al processo VictoriaLogs 
+# di girare con l'utente non privilegiato (UID 1000).
+common_init_container: &init_container
+  initContainers:
+  - name: fix-permissions
+    image: busybox
+    command: ["sh", "-c", "chown -R 1000:1000 /storage"]
+    volumeMounts:
+    - name: storage
+      mountPath: /storage
 
-# VictoriaLogs Node 1
 vlogs-node1:
   fullnameOverride: "vlogs-node1"
   server:
-    annotations: 
-      argocd.argoproj.io/sync-wave: "1"
-    podAnnotations:
-      prometheus.io/scrape: "true"
-      prometheus.io/port: "9428"
-    persistentVolume: { enabled: true, size: *storage_size }
-    <<: *probe_config
+    <<: *init_container
+    persistentVolume:
+      enabled: true
+      size: *storage_size
     affinity:
       podAntiAffinity:
         requiredDuringSchedulingIgnoredDuringExecution:
@@ -29,17 +30,13 @@ vlogs-node1:
               values: ["vlogs-node1", "vlogs-node2"]
           topologyKey: "kubernetes.io/hostname"
 
-# VictoriaLogs Node 2
 vlogs-node2:
   fullnameOverride: "vlogs-node2"
   server:
-    annotations: 
-      argocd.argoproj.io/sync-wave: "2"
-    podAnnotations:
-      prometheus.io/scrape: "true"
-      prometheus.io/port: "9428"
-    persistentVolume: { enabled: true, size: *storage_size }
-    <<: *probe_config
+    <<: *init_container
+    persistentVolume:
+      enabled: true
+      size: *storage_size
     affinity:
       podAntiAffinity:
         requiredDuringSchedulingIgnoredDuringExecution:
