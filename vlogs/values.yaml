@@ -6,6 +6,8 @@ common_server_params: &server_params
   annotations:
     argocd.argoproj.io/sync-wave: "1"
   server:
+    podAnnotations:
+      test-rollout: "1" # Cambia questo numero ogni volta che vuoi testare
     retentionPeriod: "3m"
     persistentVolume:
       enabled: true
