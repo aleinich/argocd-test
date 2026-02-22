@@ -1,0 +1,158 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: otel-collector-sa
+  namespace: victoria-metrics
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: otel-collector-role
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "endpoints"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: otel-collector-role-binding
+subjects:
+- kind: ServiceAccount
+  name: otel-collector-sa
+  namespace: victoria-metrics
+roleRef:
+  kind: ClusterRole
+  name: otel-collector-role
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-collector-conf
+  namespace: victoria-metrics
+data:
+  otel-collector-config: |
+    receivers:
+      # Metrics: Victoria Metrics HA & Victoria Logs
+      prometheus:
+        config:
+          scrape_configs:
+            - job_name: 'victoria-metrics'
+              scrape_interval: 10s
+              static_configs:
+                - targets: 
+                  - 'vm-node1-server.victoria-metrics.svc:8428'
+                  - 'vm-node2-server.victoria-metrics.svc:8428'
+                  - 'vm-gateway.victoria-metrics.svc:8427'
+            
+            - job_name: 'victoria-logs'
+              scrape_interval: 10s
+              static_configs:
+                - targets:
+                  - 'vlogs-node1-server.victoria-logs.svc:9428'
+                  - 'vlogs-node2-server.victoria-logs.svc:9428'
+                  - 'vl-gateway.victoria-logs.svc:8427'
+
+      # Metrics: Self scraping
+      prometheus/otel:
+        config:
+          scrape_configs:
+            - job_name: 'otel-collector'
+              scrape_interval: 10s
+              static_configs:
+                - targets: ['0.0.0.0:8888']
+
+      # Logs: OTLP receiver
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+
+    processors:
+      batch:
+
+    exporters:
+      # Metrics Exporters (Invio a entrambi i nodi VM)
+      prometheusremotewrite/vm-node1:
+        endpoint: "http://vm-node1-server.victoria-metrics.svc:8428/api/v1/write"
+        resource_to_telemetry_conversion:
+          enabled: true
+      prometheusremotewrite/vm-node2:
+        endpoint: "http://vm-node2-server.victoria-metrics.svc:8428/api/v1/write"
+        resource_to_telemetry_conversion:
+          enabled: true
+
+      # Logs Exporters (Invio al gateway di VictoriaLogs)
+      otlphttp/vlogs:
+        endpoint: "http://vl-gateway.victoria-logs.svc:9428/insert/opentelemetry"
+
+      debug:
+        verbosity: detailed
+
+    service:
+      telemetry:
+        logs:
+          level: "debug"
+        metrics:
+          readers:
+            - pull:
+                exporter:
+                  prometheus:
+                    host: '0.0.0.0'
+                    port: 8888
+      pipelines:
+        metrics:
+          receivers: [prometheus, prometheus/otel]
+          processors: [batch]
+          exporters: [prometheusremotewrite/vm-node1, prometheusremotewrite/vm-node2, debug]
+        logs:
+          receivers: [otlp]
+          processors: [batch]
+          exporters: [otlphttp/vlogs, debug]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-collector
+  namespace: victoria-metrics
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: otel-collector
+  template:
+    metadata:
+      labels:
+        app: otel-collector
+      annotations:
+        # Aggiorna per forzare il rollout dopo il cambio config
+        restartedAt: "2026-02-22T22:30:00Z"
+    spec:
+      serviceAccountName: otel-collector-sa
+      containers:
+      - name: otel-collector
+        image: otel/opentelemetry-collector-contrib:latest
+        ports:
+        - containerPort: 8888
+          name: metrics
+        - containerPort: 4317
+          name: otlp-grpc
+        - containerPort: 4318
+          name: otlp-http
+        command:
+          - "/otelcol-contrib"
+          - "--config=/etc/otel-config.yaml"
+        volumeMounts:
+        - name: otel-collector-config-vol
+          mountPath: /etc/otel-config.yaml
+          subPath: otel-config.yaml
+      volumes:
+        - name: otel-collector-config-vol
+          configMap:
+            name: otel-collector-conf
+            items:
+            - key: otel-collector-config
+              path: otel-config.yaml
