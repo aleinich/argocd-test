@@ -48,39 +48,26 @@ vmauth:
   enabled: true
   fullnameOverride: "vm-gateway"
   
-  # Nella 0.25.0, la struttura segue 'server' -> 'deployment' -> 'spec'
   server:
     replicaCount: 2
-    deployment:
-      spec:
-        strategy:
-          type: RollingUpdate
-          rollingUpdate:
-            maxUnavailable: 1
-            maxSurge: 1
+    # Specifica la strategia nel blocco corretto per la 0.25.x
+    strategy:
+      type: RollingUpdate
+      rollingUpdate:
+        maxUnavailable: 1
+        maxSurge: 1
     
-    # Probes (anch'esse sotto server)
+    # Probes per gestire correttamente il passaggio durante il rolling update
     livenessProbe:
-      initialDelaySeconds: 5
+      initialDelaySeconds: 10
       tcpSocket:
         port: http
     readinessProbe:
-      initialDelaySeconds: 5
+      initialDelaySeconds: 10
       tcpSocket:
         port: http
 
-  # Cambiato in 'preferred' per permettere 2 pod su un singolo nodo (Minikube)
-  affinity:
-    podAntiAffinity:
-      preferredDuringSchedulingIgnoredDuringExecution:
-      - weight: 100
-        podAffinityTerm:
-          labelSelector:
-            matchExpressions:
-            - key: app.kubernetes.io/name
-              operator: In
-              values: ["vmauth"]
-          topologyKey: "kubernetes.io/hostname"
+  # Abbiamo rimosso l'intero blocco affinity: ...
 
   config:
     unauthorized_user:
