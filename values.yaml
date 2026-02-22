@@ -1,38 +1,104 @@
-common_storage: &storage_size "5Gi"
-
-node1:
-  fullnameOverride: "vm-node1"
-  server:
-    annotations: 
-      argocd.argoproj.io/sync-wave: "1"
-    persistentVolume: { enabled: true, size: *storage_size }
-  vmagent: { enabled: false }
-
-node2:
-  fullnameOverride: "vm-node2"
-  server:
-    annotations: 
-      argocd.argoproj.io/sync-wave: "2"
-    persistentVolume: { enabled: true, size: *storage_size }
-  vmagent: { enabled: false }
-
-vmauth:
-  enabled: true
-  fullnameOverride: "vm-gateway"
-  replicaCount: 2
-  # Annotazione per il Deployment del gateway
-  annotations: 
-    argocd.argoproj.io/sync-wave: "3"
-  updateStrategy:
-      type: RollingUpdate
-      rollingUpdate:
-        maxSurge: 1       # Crea 1 nuovo pod prima di distruggere i vecchi
-        maxUnavailable: 0 # Garantisce che ci siano sempre pod pronti
-  config:
+apiVersion: v1
+kind: Service
+metadata:
+  name: vm-server
+  namespace: victoria-metrics
+spec:
+  clusterIP: None
+  selector:
+    app: vm-server
+  ports:
+  - port: 8428
+    name: http
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: vm-node1-server
+  namespace: victoria-metrics
+spec:
+  serviceName: "vm-server"
+  replicas: 2
+  selector:
+    matchLabels:
+      app: vm-server
+  template:
+    metadata:
+      labels:
+        app: vm-server
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - vm-server
+            topologyKey: "kubernetes.io/hostname"
+      containers:
+      - name: victoria-metrics
+        image: victoriametrics/victoria-metrics:latest
+        ports:
+        - containerPort: 8428
+  volumeClaimTemplates:
+  - metadata:
+      name: server-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vmauth
+  namespace: victoria-metrics
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: vmauth
+  template:
+    metadata:
+      labels:
+        app: vmauth
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - vmauth
+            topologyKey: "kubernetes.io/hostname"
+      containers:
+      - name: vmauth
+        image: victoriametrics/vmauth:latest
+        ports:
+        - containerPort: 8427
+        args:
+        - "-auth.config=/config/auth.yml"
+        volumeMounts:
+        - name: auth-config
+          mountPath: /config
+      volumes:
+      - name: auth-config
+        configMap:
+          name: vmauth-config
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vmauth-config
+  namespace: victoria-metrics
+data:
+  auth.yml: |
     users:
-      - username: "node1-user"
-        password: "password1"
-        url_prefix: "http://vm-node1-server:8428"
-      - username: "node2-user"
-        password: "password2"
-        url_prefix: "http://vm-node2-server:8428"
+      - username: "admin"
+        password: "password"
+        url_prefix: "http://vm-server:8428"
