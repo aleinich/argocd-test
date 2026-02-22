@@ -1,6 +1,7 @@
+resource "argocd_application" "victoria_metrics" {
   metadata {
     name      = var.app_name
-    namespace = "argocd"
+    namespace = "argocd" # Namespace dove è installato ArgoCD
   }
 
   spec {
@@ -9,10 +10,10 @@
     source {
       repo_url        = var.repo_url
       target_revision = var.target_revision
-      path            = var.chart_path # Punto dove si trova il Chart.yaml (root ".")
+      path            = var.chart_path
 
       helm {
-        # Carica il values.yaml che definisce node1, node2 e vmauth
+        # Carica il file values.yaml presente nel repository git
         value_files = ["values.yaml"]
       }
     }
