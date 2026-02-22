@@ -3,8 +3,9 @@ common_storage: &storage_size "5Gi"
 
 # Parametri condivisi per VictoriaLogs
 common_server_params: &server_params
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
   server:
-    # Imposta la retention a 3 mesi
     retentionPeriod: "3m"
     persistentVolume:
       enabled: true
@@ -14,7 +15,6 @@ common_server_params: &server_params
       runAsGroup: 1000
       fsGroup: 1000
       runAsNonRoot: true
-    # Forza l'esecuzione sul nodo master di Minikube
     nodeSelector:
       kubernetes.io/hostname: minikube
 
