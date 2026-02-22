@@ -1,130 +1,67 @@
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: victoria-metrics
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: vm-server
-  namespace: victoria-metrics
-spec:
-  clusterIP: None
-  selector:
-    app: vm-server
-  ports:
-  - port: 8428
-    name: http
----
-apiVersion: apps/v1
-kind: StatefulSet
-metadata:
-  name: vm-node1-server
-  namespace: victoria-metrics
-spec:
-  serviceName: "vm-server"
-  replicas: 2
-  selector:
-    matchLabels:
-      app: vm-server
-  template:
-    metadata:
-      labels:
-        app: vm-server
-    spec:
-      affinity:
-        podAntiAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-          - labelSelector:
-              matchExpressions:
-              - key: app
-                operator: In
-                values:
-                - vm-server
-            topologyKey: "kubernetes.io/hostname"
-      containers:
-      - name: victoria-metrics
-        image: victoriametrics/victoria-metrics:latest
-        ports:
-        - containerPort: 8428
-        # Argomenti per la ritenzione e storage (opzionale)
-        args:
-          - "-storageDataPath=/storage"
-          - "-retentionPeriod=1"
-        volumeMounts:
-        - name: server-data
-          mountPath: /storage
-  volumeClaimTemplates:
-  - metadata:
-      name: server-data
-    spec:
-      accessModes: [ "ReadWriteOnce" ]
-      resources:
-        requests:
-          storage: 5Gi
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: vmauth-config
-  namespace: victoria-metrics
-data:
-  auth.yml: |
-    # Configurazione senza autenticazione: 
-    # ogni richiesta anonima viene inoltrata al backend
+common_storage: &storage_size "5Gi"
+
+# Regola di Anti-Affinity: impedisce a pod con la stessa label di stare sullo stesso nodo
+node1:
+  fullnameOverride: "vm-node1"
+  server:
+    annotations: 
+      argocd.argoproj.io/sync-wave: "1"
+    persistentVolume: { enabled: true, size: *storage_size }
+    affinity:
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+            - key: app.kubernetes.io/instance
+              operator: In
+              values: ["vm-node1", "vm-node2"]
+          topologyKey: "kubernetes.io/hostname"
+  vmagent: { enabled: false }
+
+node2:
+  fullnameOverride: "vm-node2"
+  server:
+    annotations: 
+      argocd.argoproj.io/sync-wave: "2"
+    persistentVolume: { enabled: true, size: *storage_size }
+    affinity:
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+            - key: app.kubernetes.io/instance
+              operator: In
+              values: ["vm-node1", "vm-node2"]
+          topologyKey: "kubernetes.io/hostname"
+  vmagent: { enabled: false }
+
+vmauth:
+  enabled: true
+  fullnameOverride: "vm-gateway"
+  replicaCount: 2
+  annotations: 
+    argocd.argoproj.io/sync-wave: "3"
+  
+  # Anti-Affinity per il gateway: distribuisce le 2 repliche sui 2 nodi
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app.kubernetes.io/name
+            operator: In
+            values: ["vmauth"]
+        topologyKey: "kubernetes.io/hostname"
+
+  updateStrategy:
+      type: RollingUpdate
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 0
+
+  config:
+    # Solo accesso non autenticato (Pass-through totale)
     unauthorized_user:
-      url_prefix: "http://vm-server:8428"
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: vmauth
-  namespace: victoria-metrics
-spec:
-  replicas: 2
-  selector:
-    matchLabels:
-      app: vmauth
-  template:
-    metadata:
-      labels:
-        app: vmauth
-    spec:
-      affinity:
-        podAntiAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-          - labelSelector:
-              matchExpressions:
-              - key: app
-                operator: In
-                values:
-                - vmauth
-            topologyKey: "kubernetes.io/hostname"
-      containers:
-      - name: vmauth
-        image: victoriametrics/vmauth:latest
-        ports:
-        - containerPort: 8427
-        args:
-        - "-auth.config=/config/auth.yml"
-        volumeMounts:
-        - name: auth-config
-          mountPath: /config
-      volumes:
-      - name: auth-config
-        configMap:
-          name: vmauth-config
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: vmauth-service
-  namespace: victoria-metrics
-spec:
-  type: NodePort
-  selector:
-    app: vmauth
-  ports:
-  - port: 8427
-    targetPort: 8427
-    nodePort: 30427
+      url_prefix: 
+        - "http://vm-node1-server:8428"
+        - "http://vm-node2-server:8428"
