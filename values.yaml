@@ -47,26 +47,39 @@ node2:
 vmauth:
   enabled: true
   fullnameOverride: "vm-gateway"
+  
+  # Deve stare qui, alla radice di vmauth
   replicaCount: 2
   
-  # Nel chart 0.23.0 la chiave per il deployment è 'deploymentStrategy'
-  # o viene iniettata tramite 'extraArgs'. Tuttavia, molti utenti hanno risolto così:
+  # La chiave deve essere 'strategy', non 'updateStrategy'
   strategy:
     type: RollingUpdate
     rollingUpdate:
       maxUnavailable: 1
       maxSurge: 1
 
-  # Se il chart ignora 'strategy', forziamo la sovrascrittura tramite patch nel modulo Terraform o ArgoCD
-  # Ma prima, assicuriamoci che le probes siano correttamente indentate:
+  # Anche le probes devono stare qui fuori
   livenessProbe:
     tcpSocket:
       port: 8427
-    initialDelaySeconds: 10
+    initialDelaySeconds: 15
   readinessProbe:
     tcpSocket:
       port: 8427
-    initialDelaySeconds: 10
+    initialDelaySeconds: 15
+
+  # Mantieni il resto come prima
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+            - key: app.kubernetes.io/name
+              operator: In
+              values: ["vmauth"]
+          topologyKey: "kubernetes.io/hostname"
 
   config:
     unauthorized_user:
