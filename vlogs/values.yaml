@@ -6,7 +6,7 @@ common_server_params: &server_params
   podAnnotations:
     test-rollout: "4"
   server:
-    retentionPeriod: "3m"
+    retentionPeriod: "12w"
     persistentVolume:
       enabled: true
       size: *storage_size
