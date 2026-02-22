@@ -1,12 +1,21 @@
 common_storage: &storage_size "5Gi"
 
-# Regola di Anti-Affinity: impedisce a pod con la stessa label di stare sullo stesso nodo
+# Configurazione comune per le Probes (evita il CrashLoop)
+common_probes: &probe_config
+  livenessProbe:
+    initialDelaySeconds: 30
+    periodSeconds: 15
+  readinessProbe:
+    initialDelaySeconds: 30
+    periodSeconds: 15
+
 node1:
   fullnameOverride: "vm-node1"
   server:
     annotations: 
       argocd.argoproj.io/sync-wave: "1"
     persistentVolume: { enabled: true, size: *storage_size }
+    <<: *probe_config
     affinity:
       podAntiAffinity:
         requiredDuringSchedulingIgnoredDuringExecution:
@@ -24,6 +33,7 @@ node2:
     annotations: 
       argocd.argoproj.io/sync-wave: "2"
     persistentVolume: { enabled: true, size: *storage_size }
+    <<: *probe_config
     affinity:
       podAntiAffinity:
         requiredDuringSchedulingIgnoredDuringExecution:
@@ -42,7 +52,6 @@ vmauth:
   annotations: 
     argocd.argoproj.io/sync-wave: "3"
   
-  # Anti-Affinity per il gateway: distribuisce le 2 repliche sui 2 nodi
   affinity:
     podAntiAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
@@ -53,14 +62,7 @@ vmauth:
             values: ["vmauth"]
         topologyKey: "kubernetes.io/hostname"
 
-  updateStrategy:
-      type: RollingUpdate
-      rollingUpdate:
-        maxSurge: 1
-        maxUnavailable: 0
-
   config:
-    # Solo accesso non autenticato (Pass-through totale)
     unauthorized_user:
       url_prefix: 
         - "http://vm-node1-server:8428"
