@@ -1,4 +1,4 @@
-common_storage: &storage_size "10Gi" # I log pesano più delle metriche
+common_storage: &storage_size "5Gi" # I log pesano più delle metriche
 
 common_probes: &probe_config
   livenessProbe:
