@@ -48,29 +48,38 @@ vmauth:
   enabled: true
   fullnameOverride: "vm-gateway"
   
-  server:
-    # Ora che non abbiamo vincoli, 2 repliche gireranno senza problemi
-    replicaCount: 2
-    
-    # Questa struttura forza finalmente il RollingUpdate
-    strategy:
-      type: RollingUpdate
-      rollingUpdate: 1
-    
-    # Fondamentali per far capire a K8s quando il pod è pronto
-    livenessProbe:
-      initialDelaySeconds: 15
-      tcpSocket:
-        port: http
-    readinessProbe:
-      initialDelaySeconds: 15
-      tcpSocket:
-        port: http
+  # Come da file: replicaCount è alla radice del chart
+  replicaCount: 2
 
-  # Abbiamo rimosso completamente il blocco affinity
+  # La strategia di update è sotto deployment.spec
+  deployment:
+    spec:
+      strategy:
+        type: RollingUpdate
+        rollingUpdate:
+          maxUnavailable: 1
+          maxSurge: 1
+
+  # Anche le probes sono alla radice, ma si chiamano 'probe' (singolare)
+  probe:
+    readiness:
+      tcpSocket:
+        port: http
+      initialDelaySeconds: 10
+    liveness:
+      tcpSocket:
+        port: http
+      initialDelaySeconds: 10
+
+  # Rimuoviamo affinity per evitare blocchi sui due nodi
+  affinity: {}
 
   config:
     unauthorized_user:
       url_prefix: 
         - "http://vm-node1-server:8428"
         - "http://vm-node2-server:8428"
+
+  # Argocd Wave
+  annotations: 
+    argocd.argoproj.io/sync-wave: "3"
