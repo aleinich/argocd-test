@@ -47,16 +47,26 @@ node2:
 vmauth:
   enabled: true
   fullnameOverride: "vm-gateway"
-  replicaCount: 2
-  # Forza il rolling update: garantisce disponibilità durante l'aggiornamento
-  updateStrategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxUnavailable: 1
-      maxSurge: 1
-  
-  # Le Probes sono essenziali per il rolling update
-  <<: *probe_config
+  # Sposta replicaCount e strategy dentro il blocco server
+  server:
+    replicaCount: 2
+    updateStrategy:
+      type: RollingUpdate
+      rollingUpdate:
+        maxUnavailable: 1
+        maxSurge: 1
+    
+    # Anche le probes per il gateway vanno qui
+    livenessProbe:
+      initialDelaySeconds: 5
+      periodSeconds: 15
+      tcpSocket:
+        port: http
+    readinessProbe:
+      initialDelaySeconds: 5
+      periodSeconds: 15
+      tcpSocket:
+        port: http
 
   annotations: 
     argocd.argoproj.io/sync-wave: "3"
