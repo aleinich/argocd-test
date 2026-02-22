@@ -1,15 +1,12 @@
-# Variabili comuni
-common_storage: &storage_size "5Gi"
-
 common_server_params: &server_params
   persistentVolume:
     enabled: true
-    size: *storage_size
+    size: "5Gi"
   securityContext:
-    runAsUser: 0
-    runAsGroup: 0
-    fsGroup: 0
-  # Forza i pod sul nodo master dove i permessi funzionano
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    runAsNonRoot: true  # Specifichiamo che non vogliamo root
   nodeSelector:
     kubernetes.io/hostname: minikube
 
