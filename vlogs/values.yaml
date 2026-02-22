@@ -8,7 +8,7 @@ common_server_params: &server_params
   server:
     retentionPeriod: "3"
     extraArgs:
-      httpShutdownDelay: "20s"
+      http.ShutdownDelay: "20s"
     persistentVolume:
       enabled: true
       size: *storage_size
