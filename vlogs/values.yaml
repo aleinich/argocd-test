@@ -1,12 +1,10 @@
 # Variabili comuni
 common_storage: &storage_size "5Gi"
 
-# Parametri condivisi per VictoriaLogs
+# --- PARAMETRI BASE (Senza Wave condivisa) ---
 common_server_params: &server_params
-  annotations:
-    argocd.argoproj.io/sync-wave: "1"
   podAnnotations:
-    test-rollout: "2"  # Incrementa questo numero per forzare il restart
+    test-rollout: "3"
   server:
     retentionPeriod: "3m"
     persistentVolume:
@@ -20,45 +18,31 @@ common_server_params: &server_params
     nodeSelector:
       kubernetes.io/hostname: minikube
 
-# Configurazione Nodo 1
+# --- WAVE 1: VICTORIA LOGS NODO 1 ---
 vlogs-node1:
   fullnameOverride: "vlogs-node1"
-  server:
-    <<: *server_params
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+  <<: *server_params
 
-# Configurazione Nodo 2
+# --- WAVE 2: VICTORIA LOGS NODO 2 ---
 vlogs-node2:
   fullnameOverride: "vlogs-node2"
-  server:
-    <<: *server_params
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+  <<: *server_params
 
-# Configurazione Gateway (vmauth)
+# --- WAVE 3: GATEWAY (VMAUTH) ---
 vmauth:
   enabled: true
   fullnameOverride: "vl-gateway"
+  annotations: 
+    argocd.argoproj.io/sync-wave: "3"
+  podAnnotations:
+    test-rollout: "3"
   replicaCount: 2
-  deployment:
-    spec:
-      strategy:
-        type: RollingUpdate
-        rollingUpdate:
-          maxUnavailable: 1
-          maxSurge: 1
-  probe:
-    readiness:
-      tcpSocket:
-        port: http
-      initialDelaySeconds: 10
-    liveness:
-      tcpSocket:
-        port: http
-      initialDelaySeconds: 10
   config:
     unauthorized_user:
       url_prefix: 
         - "http://vlogs-node1-server.victoria-logs.svc:9428"
         - "http://vlogs-node2-server.victoria-logs.svc:9428"
-  annotations: 
-    argocd.argoproj.io/sync-wave: "3"
-  podAnnotations:
-    test-rollout: "1" 
