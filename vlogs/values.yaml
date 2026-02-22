@@ -1,7 +1,6 @@
 # Variabili comuni
 common_storage: &storage_size "5Gi"
 
-# Definiamo i parametri interni al blocco server per evitare sovrascritture
 common_server_params: &server_params
   persistentVolume:
     enabled: true
@@ -10,34 +9,19 @@ common_server_params: &server_params
     runAsUser: 0
     runAsGroup: 0
     fsGroup: 0
+  # Forza i pod sul nodo master dove i permessi funzionano
+  nodeSelector:
+    kubernetes.io/hostname: minikube
 
 vlogs-node1:
   fullnameOverride: "vlogs-node1"
   server:
     <<: *server_params
-    affinity:
-      podAntiAffinity:
-        requiredDuringSchedulingIgnoredDuringExecution:
-        - labelSelector:
-            matchExpressions:
-            - key: app.kubernetes.io/instance
-              operator: In
-              values: ["vlogs-node1", "vlogs-node2"]
-          topologyKey: "kubernetes.io/hostname"
 
 vlogs-node2:
   fullnameOverride: "vlogs-node2"
   server:
     <<: *server_params
-    affinity:
-      podAntiAffinity:
-        requiredDuringSchedulingIgnoredDuringExecution:
-        - labelSelector:
-            matchExpressions:
-            - key: app.kubernetes.io/instance
-              operator: In
-              values: ["vlogs-node1", "vlogs-node2"]
-          topologyKey: "kubernetes.io/hostname"
 
 vmauth:
   enabled: true
