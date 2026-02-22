@@ -55,9 +55,7 @@ vmauth:
     # Questa struttura forza finalmente il RollingUpdate
     strategy:
       type: RollingUpdate
-      rollingUpdate:
-        maxUnavailable: 1
-        maxSurge: 1
+      rollingUpdate: 1
     
     # Fondamentali per far capire a K8s quando il pod è pronto
     livenessProbe:
