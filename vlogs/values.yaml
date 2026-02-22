@@ -1,0 +1,95 @@
+common_storage: &storage_size "5Gi" # I log pesano più delle metriche
+
+common_probes: &probe_config
+  livenessProbe:
+    initialDelaySeconds: 30
+    periodSeconds: 15
+  readinessProbe:
+    initialDelaySeconds: 30
+    periodSeconds: 15
+
+# VictoriaLogs Node 1
+vlogs-node1:
+  fullnameOverride: "vlogs-node1"
+  server:
+    annotations: 
+      argocd.argoproj.io/sync-wave: "1"
+    podAnnotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "9428"
+    persistentVolume: { enabled: true, size: *storage_size }
+    <<: *probe_config
+    affinity:
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+            - key: app.kubernetes.io/instance
+              operator: In
+              values: ["vlogs-node1", "vlogs-node2"]
+          topologyKey: "kubernetes.io/hostname"
+
+# VictoriaLogs Node 2
+vlogs-node2:
+  fullnameOverride: "vlogs-node2"
+  server:
+    annotations: 
+      argocd.argoproj.io/sync-wave: "2"
+    podAnnotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "9428"
+    persistentVolume: { enabled: true, size: *storage_size }
+    <<: *probe_config
+    affinity:
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+            - key: app.kubernetes.io/instance
+              operator: In
+              values: ["vlogs-node1", "vlogs-node2"]
+          topologyKey: "kubernetes.io/hostname"
+
+# Gateway per Logs
+vmauth:
+  enabled: true
+  fullnameOverride: "vm-gateway"
+  
+  # Come da file: replicaCount è alla radice del chart
+  replicaCount: 2
+
+  # La strategia di update è sotto deployment.spec
+  deployment:
+    spec:
+      strategy:
+        type: RollingUpdate
+        rollingUpdate:
+          maxUnavailable: 1
+          maxSurge: 1
+
+  # Anche le probes sono alla radice, ma si chiamano 'probe' (singolare)
+  probe:
+    readiness:
+      tcpSocket:
+        port: http
+      initialDelaySeconds: 10
+    liveness:
+      tcpSocket:
+        port: http
+      initialDelaySeconds: 10
+
+  # Rimuoviamo affinity per evitare blocchi sui due nodi
+  affinity: {}
+
+  config:
+    unauthorized_user:
+      url_prefix: 
+        - "http://vlogs-node1:9428"
+        - "http://vlogs-node2:9428"
+        
+  # Argocd Wave
+  annotations: 
+    argocd.argoproj.io/sync-wave: "3"
+
+  podAnnotations:
+    test-rollout: "1" # Cambia questo numero ogni volta che vuoi testare
