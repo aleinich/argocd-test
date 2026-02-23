@@ -6,10 +6,6 @@ dependencies:
     version: "0.28.0"
     repository: "https://victoriametrics.github.io/helm-charts/"
     alias: node1
-  - name: victoria-metrics-single
-    version: "0.28.0"
-    repository: "https://victoriametrics.github.io/helm-charts/"
-    alias: node2
   - name: victoria-metrics-auth
     version: "0.22.0"
     repository: "https://victoriametrics.github.io/helm-charts/"
