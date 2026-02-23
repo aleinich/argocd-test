@@ -6,10 +6,6 @@ dependencies:
     version: "0.11.27"
     repository: "https://victoriametrics.github.io/helm-charts/"
     alias: vlogs-node1
-  - name: victoria-logs-single
-    version: "0.11.27"
-    repository: "https://victoriametrics.github.io/helm-charts/"
-    alias: vlogs-node2
   - name: victoria-metrics-auth
     version: "0.25.0"
     repository: "https://victoriametrics.github.io/helm-charts/"
