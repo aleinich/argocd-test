@@ -50,7 +50,7 @@ vmauth:
     argocd.argoproj.io/sync-wave: "3"
   podAnnotations:
     test-rollout: "100"
-  replicaCount: 2
+  replicaCount: 1
   config:
     unauthorized_user:
       url_prefix: 
