@@ -51,8 +51,8 @@ vmauth:
   fullnameOverride: "vm-gateway"
   
   # Come da file: replicaCount è alla radice del chart
-  replicaCount: 2
-
+  replicaCount: 1
+  
   # La strategia di update è sotto deployment.spec
   deployment:
     spec:
