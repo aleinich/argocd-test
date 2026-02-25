@@ -11,6 +11,7 @@ common_probes: &probe_config
 node1:
   fullnameOverride: "vm-node1"
   server:
+    automountServiceAccountToken: false
     annotations: 
       argocd.argoproj.io/sync-wave: "1"
     persistentVolume: { enabled: true, size: *storage_size }
