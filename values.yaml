@@ -10,7 +10,7 @@ common_probes: &probe_config
 
 node1:
   serviceAccount:
-    automountServiceAccountToken: false
+    automountToken: false
   fullnameOverride: "vm-node1"
   server:
     annotations: 
