@@ -9,9 +9,10 @@ common_probes: &probe_config
     periodSeconds: 15
 
 node1:
+  serviceAccount:
+    automountServiceAccountToken: false
   fullnameOverride: "vm-node1"
   server:
-    automountServiceAccountToken: false
     annotations: 
       argocd.argoproj.io/sync-wave: "1"
     persistentVolume: { enabled: true, size: *storage_size }
