@@ -1,0 +1,42 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: vm-backup-incremental
+  namespace: victoria-metrics
+spec:
+  schedule: "*/5 * * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          # Rimuoviamo il securityContext manuale e lasciamo che usi i default
+          # ma aggiungiamo l'utente direttamente nel container se serve.
+          containers:
+            - name: vmbackup
+              image: victoriametrics/vmbackup:v1.137.0
+              imagePullPolicy: IfNotPresent
+              args:
+                - -storageDataPath=/storage
+                - -customS3Endpoint=http://10.105.181.24:9000
+                - -s3ForcePathStyle=true
+                - -dst=s3://victoria-metrics-data/latest
+                - -snapshot.createURL=http://vm-db-victoria-metrics-single-server:8428/snapshot/create
+                - -snapshot.deleteURL=http://vm-db-victoria-metrics-single-server:8428/snapshot/delete
+                - -pushmetrics.url=http://vm-db-victoria-metrics-single-server:8428/api/v1/import/prometheus
+                - -loggerLevel=INFO
+              env:
+                - name: AWS_ACCESS_KEY_ID
+                  valueFrom: { secretKeyRef: { name: vm-s3-credentials, key: AWS_ACCESS_KEY_ID } }
+                - name: AWS_SECRET_ACCESS_KEY
+                  valueFrom: { secretKeyRef: { name: vm-s3-credentials, key: AWS_SECRET_ACCESS_KEY } }
+                - name: AWS_REGION
+                  value: "us-east-1"
+              volumeMounts:
+                - name: storage
+                  mountPath: /storage
+          restartPolicy: OnFailure
+          volumes:
+            - name: storage
+              persistentVolumeClaim:
+                claimName: server-volume-vm-db-victoria-metrics-single-server-0
