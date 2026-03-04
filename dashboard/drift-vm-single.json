@@ -1,0 +1,101 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "title": "Ingestion Drift (Rows/sec Delta)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 0 },
+      "datasource": { "type": "datasource", "uid": "-- Mixed --" },
+      "targets": [
+        {
+          "datasource": { "uid": "${VM_INSTANCE_1}" },
+          "expr": "rate(vm_rows_inserted_total[5m])",
+          "refId": "A",
+          "legendFormat": "Instance 1"
+        },
+        {
+          "datasource": { "uid": "${VM_INSTANCE_2}" },
+          "expr": "rate(vm_rows_inserted_total[5m])",
+          "refId": "B",
+          "legendFormat": "Instance 2"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "grafana" },
+          "expression": "$A - $B",
+          "hide": false,
+          "refId": "Drift",
+          "type": "math"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "drawStyle": "line", "lineInterpolation": "smooth" },
+          "unit": "pps"
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Drift" },
+            "properties": [
+              { "id": "custom.drawStyle", "value": "bars" },
+              { "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "title": "Storage Size Drift",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 12, "x": 0, "y": 8 },
+      "datasource": { "type": "datasource", "uid": "-- Mixed --" },
+      "targets": [
+        { "datasource": { "uid": "${VM_INSTANCE_1}" }, "expr": "vm_data_size_bytes", "refId": "A" },
+        { "datasource": { "uid": "${VM_INSTANCE_2}" }, "expr": "vm_data_size_bytes", "refId": "B" },
+        { "expression": "abs($A - $B)", "refId": "Drift", "type": "math" }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "decbytes", "color": { "mode": "thresholds" }, "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1000000 }] } }
+      }
+    },
+    {
+      "title": "Active Series Count Drift",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 12, "x": 12, "y": 8 },
+      "datasource": { "type": "datasource", "uid": "-- Mixed --" },
+      "targets": [
+        { "datasource": { "uid": "${VM_INSTANCE_1}" }, "expr": "vm_active_series", "refId": "A" },
+        { "datasource": { "uid": "${VM_INSTANCE_2}" }, "expr": "vm_active_series", "refId": "B" },
+        { "expression": "$A - $B", "refId": "Drift", "type": "math" }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "short" }
+      }
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "VM_INSTANCE_1",
+        "type": "datasource",
+        "query": "prometheus",
+        "label": "Instance 1 Source"
+      },
+      {
+        "name": "VM_INSTANCE_2",
+        "type": "datasource",
+        "query": "prometheus",
+        "label": "Instance 2 Source"
+      }
+    ]
+  },
+  "title": "VictoriaMetrics Drift Monitor",
+  "uid": "vm-drift-compare",
+  "version": 1
+}
