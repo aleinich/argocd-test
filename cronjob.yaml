@@ -1,0 +1,45 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: vm-backup-secondary-ebs
+  namespace: victoria-metrics
+spec:
+  schedule: "0 1 * * *" # Una volta al giorno (puoi mettere "*/5 * * * *" per testarlo subito)
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1 # Tiene solo l'ultimo riuscito
+  failedJobsHistoryLimit: 1     # Tiene solo l'ultimo fallito
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          affinity:
+            podAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+              - labelSelector:
+                  matchLabels:
+                    app: victoria-metrics-secondary-ebs
+                topologyKey: "kubernetes.io/hostname"
+          containers:
+          - name: vmbackup
+            image: victoriametrics/vmbackup:v1.101.0
+            args:
+              - "--storageDataPath=/source-data"
+              - "--dst=fs:///destination-backups"
+              # SOSTITUISCI [IP_DB] con l'IP recuperato al punto 2
+              - "--snapshot.createURL=http://10.244.1.12:8428/snapshot/create"
+            volumeMounts:
+              - name: source-volume
+                mountPath: /source-data
+                readOnly: true
+              - name: backup-destination
+                mountPath: /destination-backups
+          restartPolicy: Never
+          volumes:
+            - name: source-volume
+              persistentVolumeClaim:
+                claimName: data-vm-secondary-ebs-0
+                readOnly: true # Doppia protezione EBS
+            - name: backup-destination
+              hostPath:
+                path: /data/vm-backups-ip
+                type: DirectoryOrCreate
